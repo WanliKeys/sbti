@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SBTI 人格测试</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:#f0f0f0;color:#333;min-height:100vh}
+.container{max-width:640px;margin:0 auto;padding:20px}
+/* Landing */
+#landing{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center}
+#landing h1{font-size:1.8rem;font-weight:700;margin-bottom:32px;line-height:1.4}
+#landing button{background:#5a6e5a;color:#fff;border:none;padding:14px 48px;font-size:1.1rem;border-radius:8px;cursor:pointer;transition:opacity .2s}
+#landing button:hover{opacity:.85}
+.meta{margin-top:24px;font-size:.85rem;color:#888;line-height:1.8}
+.meta a{color:#4a90d9;text-decoration:none}
+/* Quiz */
+#quiz{display:none;padding-bottom:80px}
+.progress-bar{position:sticky;top:0;z-index:10;background:#fff;padding:12px 0;text-align:center;font-size:.9rem;color:#888;border-bottom:1px solid #eee}
+.question-card{background:#fff;border-radius:12px;padding:24px;margin:16px 0;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.question-card .q-header{display:flex;justify-content:space-between;font-size:.8rem;color:#aaa;margin-bottom:12px}
+.question-card .q-body{font-size:1rem;line-height:1.7;margin-bottom:16px;font-weight:500}
+.option{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;margin:6px 0;border:1.5px solid #e0e0e0;border-radius:8px;cursor:pointer;transition:all .15s}
+.option:hover{border-color:#5a6e5a;background:#f8faf8}
+.option.selected{border-color:#5a6e5a;background:#eef3ee}
+.option input[type=radio]{display:none}
+.option .letter{width:26px;height:26px;border-radius:50%;background:#e8e8e8;display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:600;flex-shrink:0;transition:background .15s}
+.option.selected .letter{background:#5a6e5a;color:#fff}
+.option .text{padding-top:2px;line-height:1.5}
+.quiz-footer{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #eee;padding:16px;z-index:10}
+.quiz-footer-inner{max-width:640px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:10px}
+.quiz-footer .hint{font-size:.85rem;color:#999}
+.quiz-footer .btns{display:flex;gap:12px;width:100%}
+.quiz-footer .btns button{flex:1;padding:12px;border-radius:8px;font-size:.95rem;cursor:pointer;border:none;transition:opacity .2s}
+.btn-back{background:#e8e8e8;color:#555}
+.btn-submit{background:#5a6e5a;color:#fff}
+.btn-submit:disabled{background:#ccc;cursor:not-allowed}
+/* Results */
+#results{display:none;padding-bottom:40px}
+.result-card{background:#fff;border-radius:12px;padding:28px;margin:16px 0;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.result-card h2{font-size:1.1rem;margin-bottom:16px;color:#555}
+.type-badge{text-align:center;padding:20px 0}
+.type-badge .en{font-size:2.4rem;font-weight:800;letter-spacing:2px}
+.type-badge .zh{font-size:1.2rem;color:#666;margin-top:4px}
+.type-badge .match{font-size:.95rem;color:#5a6e5a;margin-top:8px;font-weight:600}
+.system-note{text-align:center;font-size:.85rem;color:#999;margin-top:8px;font-style:italic}
+.dimension-list{display:flex;flex-direction:column;gap:14px}
+.dim-row{display:flex;align-items:center;gap:10px}
+.dim-label{width:80px;font-size:.8rem;color:#888;text-align:right;flex-shrink:0}
+.dim-bar{flex:1;height:8px;background:#e8e8e8;border-radius:4px;overflow:hidden;position:relative}
+.dim-fill{height:100%;background:#5a6e5a;border-radius:4px;transition:width .6s ease}
+.dim-val{width:36px;font-size:.8rem;color:#666;text-align:left;flex-shrink:0}
+.interpretation{line-height:1.8;color:#555}
+.disclaimer{text-align:center;font-size:.8rem;color:#aaa;margin-top:24px;line-height:1.6}
+/* Author section */
+.author-section{background:#fff;border-radius:12px;padding:24px;margin:16px 0;box-shadow:0 1px 4px rgba(0,0,0,.06);font-size:.9rem;line-height:1.8;color:#666}
+.author-section h3{margin-bottom:12px;font-size:1rem;color:#333}
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- Landing -->
+  <div id="landing">
+    <h1>MBTI已经过时，<br>SBTI来了。</h1>
+    <button onclick="startQuiz()">开始测试</button>
+    <div class="meta">
+      <div>原作者：<a href="https://space.bilibili.com/417038183" target="_blank">B站@蛆肉儿串儿</a></div>
+      <div>本复刻仅供学习交流，请勿用于盈利</div>
+    </div>
+  </div>
+
+  <!-- Quiz -->
+  <div id="quiz">
+    <div class="progress-bar" id="progressBar">0 / 31</div>
+    <div id="questionsContainer"></div>
+    <div class="quiz-footer">
+      <div class="quiz-footer-inner">
+        <div class="hint">全选完才会放行。世界已经够乱了，起码把题做完整。</div>
+        <div class="btns">
+          <button class="btn-back" onclick="goHome()">返回首页</button>
+          <button class="btn-submit" id="submitBtn" disabled onclick="submitQuiz()">提交并查看结果</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+    <div class="result-card">
+      <div class="type-badge">
+        <div class="en" id="typeEN">CTRL</div>
+        <div class="zh" id="typeZH">（拿捏者）</div>
+        <div class="match">匹配度 <span id="matchPct">92</span>%</div>
+        <div class="system-note" id="systemNote">系统备注会显示在这里。</div>
+      </div>
+    </div>
+
+    <div class="result-card">
+      <h2>该人格的简单解读</h2>
+      <div class="interpretation" id="interpretation"></div>
+    </div>
+
+    <div class="result-card">
+      <h2>十五维度评分</h2>
+      <div class="dimension-list" id="dimensionList"></div>
+    </div>
+
+    <div class="result-card">
+      <h2>友情提示</h2>
+      <div class="disclaimer">
+        本测试仅供娱乐，别拿它当诊断、面试、相亲、分手、招魂、算命或人生判决书。<br>
+        本复刻仅供学习交流用途，原作者是 B站@蛆肉儿串儿。
+      </div>
+    </div>
+
+    <div class="author-section">
+      <h3>作者的话</h3>
+      <p>本测试首发于b站up主蛆肉儿串儿（UID417038183），初衷是劝诫一位爱喝酒的朋友戒酒。<br><br>
+      由于作者的人格是SHIT愤世者，所以平等的攻击了各位，在此抱歉！！不过我是一个绝世大美女，你们一定会原谅我，有B站的朋友们也可以关注我。<br><br>
+      关于这个测试，我没法很好的平衡娱乐和专业性，因此对于一些人格的阐释较为模糊或完全不准（如屌丝可能并非真的屌丝），如有冒犯非常抱歉！！<br><br>
+      再鉴于时间精力有限，就随便搞了一个先这样玩玩，后续会慢慢完善修改的，总之好玩为主，还请不要用于盈利呀。</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const questions = [
+  {id:1, dim:"hidden", body:"此题没有题目，请盲选", options:[
+    {label:"A",text:"反复思考后感觉应该选A？"},{label:"B",text:"啊，要不选B？"},{label:"C",text:"不会就选C？"}
+  ]},
+  {id:2, dim:"social", body:"我和人相处主打一个电子围栏，靠太近会自动报警。", options:[
+    {label:"A",text:"认同"},{label:"B",text:"中立"},{label:"C",text:"不认同"}
+  ]},
+  {id:3, dim:"ambition", body:"我一定要不断往上爬、变得更厉害", options:[
+    {label:"A",text:"不认同"},{label:"B",text:"中立"},{label:"C",text:"认同"}
+  ]},
+  {id:4, dim:"nihilism", body:"突然某一天，我意识到人生哪有什么他妈的狗屁意义，人不过是和动物一样被各种欲望支配着，纯纯是被激素控制的东西，饿了就吃，困了就睡，一发情就想交配，我们简直和猪狗一样没什么区别。", options:[
+    {label:"A",text:"是这样的。"},{label:"B",text:"也许是，也许不是。"},{label:"C",text:"这简直是胡扯"}
+  ]},
+  {id:5, dim:"trust", body:"对象超过5小时没回消息，说自己窜稀了，你会怎么想？", options:[
+    {label:"A",text:"拉稀不可能5小时，也许ta隐瞒了我。"},{label:"B",text:"在信任和怀疑之间摇摆。"},{label:"C",text:"也许今天ta真的不太舒服。"}
+  ]},
+  {id:6, dim:"esteem", body:"我不够好，周围的人都比我优秀", options:[
+    {label:"A",text:"确实"},{label:"B",text:"有时"},{label:"C",text:"不是"}
+  ]},
+  {id:7, dim:"social", body:"你因玩《第五人格》（一款刺激的游戏）而结识许多网友，并被邀请线下见面，你的想法是？", options:[
+    {label:"A",text:"网上口嗨下就算了，真见面还是有点忐忑。"},{label:"B",text:"见网友也挺好，反正谁来聊我就聊两句。"},{label:"C",text:"我会打扮一番并热情聊天，万一呢，我是说万一呢？"}
+  ]},
+  {id:8, dim:"emotion", body:"我对天发誓，我对待每一份感情都是认真的！", options:[
+    {label:"A",text:"并没有"},{label:"B",text:"也许？"},{label:"C",text:"是的！（问心无愧骄傲脸）"}
+  ]},
+  {id:9, dim:"attachment", body:"我在感情里经常担心被对方抛弃", options:[
+    {label:"A",text:"是的"},{label:"B",text:"偶尔"},{label:"C",text:"不是"}
+  ]},
+  {id:10, dim:"purpose", body:"我内心有真正追求的东西", options:[
+    {label:"A",text:"不认同"},{label:"B",text:"中立"},{label:"C",text:"认同"}
+  ]},
+  {id:11, dim:"independence", body:"我在任何关系里都很重视个人空间", options:[
+    {label:"A",text:"我更喜欢依赖与被依赖"},{label:"B",text:"看情况"},{label:"C",text:"是的！（斩钉截铁地说道）"}
+  ]},
+  {id:12, dim:"rebellion", body:"快考试了，学校规定必须上晚自习，请假会扣分，但今晚你约了女/男神一起玩《绝地求生：刺激战场》（一款刺激的游戏），你怎么办？", options:[
+    {label:"A",text:"翘了！反正就一次！"},{label:"B",text:"干脆请个假吧。"},{label:"C",text:"都快考试了还去啥。"}
+  ]},
+  {id:13, dim:"decisiveness", body:"我做决定比较果断，不喜欢犹豫", options:[
+    {label:"A",text:"不认同"},{label:"B",text:"中立"},{label:"C",text:"认同"}
+  ]},
+  {id:14, dim:"independence", body:"恋爱后，对象非常黏人，你作何感想？", options:[
+    {label:"A",text:"那很爽了"},{label:"B",text:"都行无所谓"},{label:"C",text:"我更喜欢保留独立空间"}
+  ]},
+  {id:15, dim:"selfaware", body:"我很清楚真正的自己是什么样的", options:[
+    {label:"A",text:"不认同"},{label:"B",text:"中立"},{label:"C",text:"认同"}
+  ]},
+  {id:16, dim:"action", body:"你因便秘坐在马桶上（已长达30分钟），拉不出很难受。此时你更像", options:[
+    {label:"A",text:"再坐三十分钟看看，说不定就有了。"},{label:"B",text:"用力拍打自己的屁股并说：\"死屁股，快拉啊！\""},{label:"C",text:"使用开塞露，快点拉出来才好。"}
+  ]},
+  {id:17, dim:"honesty", body:"有时候你明明对一件事有不同的、负面的看法，但最后没说出来。多数情况下原因是：", options:[
+    {label:"A",text:"这种情况较少。"},{label:"B",text:"可能碍于情面或者关系。"},{label:"C",text:"不想让别人知道自己是个阴暗的人。"}
+  ]},
+  {id:18, dim:"rebellion", body:"我喜欢打破常规，不喜欢被束缚", options:[
+    {label:"A",text:"认同"},{label:"B",text:"保持中立"},{label:"C",text:"不认同"}
+  ]},
+  {id:19, dim:"trust", body:"你走在街上，一位萌萌的小女孩蹦蹦跳跳地朝你走来（正脸、侧脸看都萌，用vivo、苹果、华为、OPPO手机看都萌，实在是非常萌的那种），她递给你一根棒棒糖，此时你作何感想？", options:[
+    {label:"A",text:"呜呜她真好真可爱！居然给我棒棒糖！"},{label:"B",text:"一脸懵逼，作挠头状"},{label:"C",text:"这也许是一种新型诈骗？还是走开为好。"}
+  ]},
+  {id:20, dim:"execution", body:"别人说你\"执行力强\"，你内心更接近哪句？", options:[
+    {label:"A",text:"我被逼到最后确实执行力超强。。。"},{label:"B",text:"啊，有时候吧。"},{label:"C",text:"是的，事情本来就该被推进"}
+  ]},
+  {id:21, dim:"purpose", body:"我做事通常有目标。", options:[
+    {label:"A",text:"不认同"},{label:"B",text:"中立"},{label:"C",text:"认同"}
+  ]},
+  {id:22, dim:"optimism", body:"大多数人是善良的", options:[
+    {label:"A",text:"其实邪恶的人心比世界上的痔疮更多。"},{label:"B",text:"也许吧。"},{label:"C",text:"是的，我愿相信好人更多。"}
+  ]},
+  {id:23, dim:"planning", body:"我做事常常有计划，____", options:[
+    {label:"A",text:"然而计划不如变化快。"},{label:"B",text:"有时能完成，有时不能。"},{label:"C",text:"我讨厌被打破计划。"}
+  ]},
+  {id:24, dim:"attachment", body:"我渴望和我信任的人关系密切，熟得像失散多年的亲戚。", options:[
+    {label:"A",text:"认同"},{label:"B",text:"中立"},{label:"C",text:"不认同"}
+  ]},
+  {id:25, dim:"esteem", body:"我不仅是屌丝，我还是joker,我还是咸鱼，这辈子没谈过一场恋爱，胆怯又自卑，我的青春就是一场又一场的意淫，每一天幻想着我也能有一个女孩子和我一起压马路，一起逛街，一起玩，现实却是爆了父母金币，读了个烂学校，混日子之后找班上，没有理想，没有目标，没有能力的三无人员，每次看到你能在网上开屌丝的玩笑，我都想哭，我就是地底下的老鼠，透过下水井的缝隙，窥探地上的各种美好，每一次看到这种都是对我心灵的一次伤害，对我生存空间的一次压缩，求求哥们给我们这种小丑一点活路吧，我真的不想在白天把枕巾哭湿一大片", options:[
+    {label:"A",text:"我哭了。。"},{label:"B",text:"这是什么。。"},{label:"C",text:"这不是我！"}
+  ]},
+  {id:26, dim:"social", body:"朋友带了ta的朋友一起来玩，你最可能的状态是", options:[
+    {label:"A",text:"对\"朋友的朋友\"天然有点距离感，怕影响二人关系"},{label:"B",text:"看对方，能玩就玩。"},{label:"C",text:"朋友的朋友应该也算我的朋友！要热情聊天"}
+  ]},
+  {id:27, dim:"hobby", body:"您平时有什么爱好？", extra:"补充题", options:[
+    {label:"A",text:"吃喝拉撒"},{label:"B",text:"艺术爱好"},{label:"C",text:"饮酒"},{label:"D",text:"健身"}
+  ]},
+  {id:28, dim:"emotion", body:"你的恋爱对象是一个尊老爱幼，温柔敦厚，洁身自好，光明磊落，大义凛然，能言善辩，口才流利，观察入微，见多识广，博学多才，诲人不倦，和蔼可亲，平易近人，心地善良，慈眉善目，积极进取，意气风发，玉树临风，国色天香，倾国倾城，花容月貌的人，此时你会？", options:[
+    {label:"A",text:"就算ta再优秀我也不会陷入太深。"},{label:"B",text:"会介于A和C之间。"},{label:"C",text:"会非常珍惜ta，也许会变成恋爱脑。"}
+  ]},
+  {id:29, dim:"independence", body:"外人的评价对我来说无所吊谓。", options:[
+    {label:"A",text:"不认同"},{label:"B",text:"中立"},{label:"C",text:"认同"}
+  ]},
+  {id:30, dim:"honesty", body:"我在不同人面前会表现出不一样的自己", options:[
+    {label:"A",text:"不认同"},{label:"B",text:"中立"},{label:"C",text:"认同"}
+  ]},
+  {id:31, dim:"purpose", body:"我做事主要为了取得成果和进步，而不是避免麻烦和风险。", options:[
+    {label:"A",text:"不认同"},{label:"B",text:"中立"},{label:"C",text:"认同"}
+  ]}
+];
+
+const answers = {};
+
+// 15 dimensions for result display
+const dimensionDefs = [
+  {key:"social_energy",label:"社交能量"},
+  {key:"independence",label:"独立性"},
+  {key:"ambition",label:"进取心"},
+  {key:"trust",label:"信任度"},
+  {key:"emotion",label:"情感深度"},
+  {key:"self_awareness",label:"自我认知"},
+  {key:"conformity",label:"从众度"},
+  {key:"planning",label:"计划性"},
+  {key:"self_esteem",label:"自尊"},
+  {key:"honesty",label:"真实性"},
+  {key:"risk",label:"冒险度"},
+  {key:"purpose",label:"目标感"},
+  {key:"attachment",label:"依恋度"},
+  {key:"resilience",label:"抗压"},
+  {key:"optimism",label:"乐观度"}
+];
+
+const personalityTypes = [
+  {
+    id:"CTRL",name:"拿捏者",
+    match:()=>75+Math.floor(Math.random()*20),
+    note:"你就像一个行走的操控台，所有按钮都在你手里。别人以为你在配合世界，其实是世界在配合你。",
+    desc:"你天生具有掌控欲和全局观。你不喜欢失控的感觉，所以你会提前布局、预判风险、准备Plan B。在感情里你看似游刃有余，其实你只是把焦虑藏得比别人深。\n\n你不是冷漠，你是太清醒。你看穿了太多游戏规则，所以选择做那个制定规则的人。\n\n你的口头禅大概是：\"我觉得应该这样做\"——而奇怪的是，大家通常真的会听你的。",
+    condition: s => s.independence>60 && s.purpose>55 && s.decisiveness>50
+  },
+  {
+    id:"SHIT",name:"愤世者",
+    match:()=>70+Math.floor(Math.random()*25),
+    note:"你对这个世界有太多不满，但你选择用幽默和沉默来消化它们。",
+    desc:"你是那种看透了人生荒诞之后还能笑出来的人。你的朋友圈里一半是段子，一半是深夜emo。\n\n你不相信所谓的成功学和鸡汤，觉得大多数人在自欺欺人。但你也不是完全的悲观主义者——你只是对世界的期望值调得比较低，所以偶尔被感动到的时候反而更深刻。\n\n你大概率有个小众爱好，可能还是那种不太方便跟人分享的那种。",
+    condition: s => s.trust<45 && s.optimism<45 && s.honesty>50
+  },
+  {
+    id:"BOSS",name:"卷王",
+    match:()=>78+Math.floor(Math.random()*18),
+    note:"别人躺平的时候你已经在跑了，别人跑步的时候你已经在飞了。",
+    desc:"你有一个内置的不安宁引擎，总是在寻找下一个目标。休息对你来说是一种需要学习的能力。\n\n你可能经常被人说\"你也太拼了吧\"，但你自己觉得这很正常——你只是不想浪费时间。\n\n你的日程表永远是满的，你的目标清单永远在更新。有时候你也会想：我到底在追什么？但这个念头通常持续不了三秒。\n\n建议：偶尔停下来看看风景，风景不会因为你没看就消失。",
+    condition: s => s.ambition>65 && s.purpose>60 && s.execution>55
+  },
+  {
+    id:"SIMP",name:"恋爱脑",
+    match:()=>72+Math.floor(Math.random()*22),
+    note:"你爱一个人的时候，整个世界都变成了ta的背景板。",
+    desc:"你是那种一旦喜欢上一个人就会全力以赴的类型。你会记住对方说的每一句话，会在深夜反复翻聊天记录，会因为对方一个表情包分析半小时。\n\n你的朋友可能经常劝你\"冷静一点\"，但你做不到。你的感情世界浓度很高——要么不爱，要么爱到肝脑涂地。\n\n你的风险是容易在感情中迷失自我，建议给自己留一张\"清醒卡\"。",
+    condition: s => s.attachment>65 && s.emotion>60 && s.independence<45
+  },
+  {
+    id:"GHOST",name:"社交幽灵",
+    match:()=>74+Math.floor(Math.random()*20),
+    note:"你不是社恐，你只是选择性隐形。",
+    desc:"你在社交场合中游刃有余地假装不存在。群聊你看了，但你选择不回。聚会你去了，但你坐在角落。\n\n你其实不是不喜欢人，你只是觉得大多数社交活动的性价比太低。你宁愿一个人待着做自己的事，也不想为了合群而合群。\n\n你的好朋友不多，但每一个都是经过了时间认证的。你不轻易敞开心扉，但一旦认定了，就是真的铁。\n\n你最大的技能是：消失。消息不回、聚会不露面，然后在某一天突然冒出来发个朋友圈。",
+    condition: s => s.social_energy<40 && s.independence>55
+  },
+  {
+    id:"JOKER",name:"小丑",
+    match:()=>68+Math.floor(Math.random()*24),
+    note:"你是自己的脱口秀演员，观众只有你自己。",
+    desc:"你的自嘲能力是一流的。你能把自己所有的失败和不堪都编成段子，逗别人笑。\n\n但只有你知道，有些段子你笑着笑着就笑不出来了。\n\n你表面上什么都不在乎，其实内心戏比别人多三倍。你害怕被看穿，所以用幽默当盔甲。你害怕被否定，所以先否定自己。\n\n但你有一个别人没有的超能力：你的同理心很强，因为你经历过太多，所以你能理解太多。\n\n你值得更好的，真的。",
+    condition: s => s.self_esteem<40 && s.honesty>55
+  },
+  {
+    id:"BUG",name:"叛逆者",
+    match:()=>76+Math.floor(Math.random()*18),
+    note:"规则是用来被打破的——至少你是这么觉得的。",
+    desc:"你讨厌被定义、被框住、被告知\"应该怎样\"。你的叛逆不是青春期的中二病，而是一种深入骨髓的「为什么要按你说的来」。\n\n你大概率在学生时代就不太听话，工作了也不太喜欢职场PUA。你走自己的路，即使这条路看起来弯弯绕绕。\n\n你是团队里那个提出不同意见的人，是朋友圈里那个不走寻常路的人。有时候你会因此碰壁，但你宁愿碰自己的壁，也不愿走别人铺好的路。\n\n你的座右铭：能跑就行，不行就重构。",
+    condition: s => s.rebellion>60 && s.risk>55
+  },
+  {
+    id:"AFK",name:"躺平者",
+    match:()=>70+Math.floor(Math.random()*22),
+    note:"你悟了：努力不一定成功，但不努力一定很舒服。",
+    desc:"你不是懒，你只是看透了。你发现大多数所谓的\"努力\"不过是给别人看的表演，所以你选择退出这场演出。\n\n你的生活哲学是：差不多就行了。不是没有追求，而是觉得追求本身就是一种执念。\n\n你大概率有一个自己的小世界（游戏、追番、撸猫、发呆），在那个世界里你活得很自在。外界的评价对你来说真的无所吊谓。\n\n别人觉得你浪费了潜力，但你觉得你省下了力气。\n\n其实挺好的，至少你快乐。",
+    condition: s => s.ambition<40 && s.purpose<40
+  }
+];
+
+function startQuiz(){
+  document.getElementById('landing').style.display='none';
+  document.getElementById('quiz').style.display='block';
+  renderQuestions();
+}
+
+function goHome(){
+  document.getElementById('quiz').style.display='none';
+  document.getElementById('results').style.display='none';
+  document.getElementById('landing').style.display='flex';
+}
+
+function renderQuestions(){
+  const c=document.getElementById('questionsContainer');
+  c.innerHTML='';
+  questions.forEach(q=>{
+    const card=document.createElement('article');
+    card.className='question-card';
+    const dimLabel=q.dim==='hidden'?'维度已隐藏':q.dim==='hobby'?'补充题':'维度已隐藏';
+    card.innerHTML=`
+      <div class="q-header"><span>第 ${q.id} 题</span><span>${dimLabel}</span></div>
+      <div class="q-body">${q.body}</div>
+      <div class="options" data-qid="${q.id}">
+        ${q.options.map((o,i)=>`
+          <label class="option" data-qid="${q.id}" data-oidx="${i}" onclick="selectOption(${q.id},${i},this)">
+            <input type="radio" name="q${q.id}" value="${i}">
+            <span class="letter">${o.label}</span>
+            <span class="text">${o.text}</span>
+          </label>
+        `).join('')}
+      </div>
+    `;
+    c.appendChild(card);
+  });
+}
+
+function selectOption(qid,oidx,el){
+  const siblings=el.parentElement.querySelectorAll('.option');
+  siblings.forEach(s=>s.classList.remove('selected'));
+  el.classList.add('selected');
+  el.querySelector('input').checked=true;
+  answers[qid]=oidx;
+  updateProgress();
+}
+
+function updateProgress(){
+  const count=Object.keys(answers).length;
+  document.getElementById('progressBar').textContent=`${count} / ${questions.length}`;
+  document.getElementById('submitBtn').disabled=(count<questions.length);
+}
+
+function calcScores(){
+  // Map answers to dimension scores (0-100)
+  // Each answer A=0, B=50, C=100 (with inversion where needed)
+  const raw={};
+  const dimMap={
+    // qid: [dimension, invert?]
+    2:['social_energy',false],
+    3:['ambition',false],
+    4:['optimism',true],
+    5:['trust',false],
+    6:['self_esteem',true],
+    7:['social_energy',false],
+    8:['emotion',false],
+    9:['attachment',true],
+    10:['purpose',false],
+    11:['independence',false],
+    12:['rebellion',false],
+    13:['decisiveness',false],
+    14:['independence',false],
+    15:['self_awareness',false],
+    16:['risk',false],
+    17:['honesty',false],
+    18:['rebellion',false],
+    19:['trust',true],
+    20:['execution',false],
+    21:['purpose',false],
+    22:['optimism',false],
+    23:['planning',false],
+    24:['attachment',true],
+    25:['self_esteem',true],
+    26:['social_energy',false],
+    27:['hobby',false],
+    28:['emotion',false],
+    29:['independence',false],
+    30:['honesty',true],
+    31:['purpose',false]
+  };
+
+  // Accumulate scores per internal dimension
+  const acc={};
+  const cnt={};
+  for(const [qid,dimInfo] of Object.entries(dimMap)){
+    if(answers[qid]===undefined) continue;
+    const [dim,invert]=dimInfo;
+    let v=answers[qid]*50; // 0,50,100
+    if(invert) v=100-v;
+    if(qid==27){
+      // hobby: special mapping
+      v=[20,60,80,50][answers[qid]]||50;
+    }
+    acc[dim]=(acc[dim]||0)+v;
+    cnt[dim]=(cnt[dim]||0)+1;
+  }
+
+  // Average
+  const avg={};
+  for(const d of Object.keys(acc)) avg[d]=Math.round(acc[d]/cnt[d]);
+
+  // Map to the 15 display dimensions
+  return {
+    social_energy: avg.social_energy||50,
+    independence: avg.independence||50,
+    ambition: avg.ambition||50,
+    trust: avg.trust||50,
+    emotion: avg.emotion||50,
+    self_awareness: avg.self_awareness||50,
+    conformity: 100-(avg.rebellion||50),
+    planning: avg.planning||avg.decisiveness||50,
+    self_esteem: avg.self_esteem||50,
+    honesty: avg.honesty||50,
+    risk: avg.risk||avg.rebellion||50,
+    purpose: avg.purpose||50,
+    attachment: avg.attachment||50,
+    resilience: avg.execution||50,
+    optimism: avg.optimism||50,
+    // Internal keys for type matching
+    decisiveness: avg.decisiveness||50,
+    execution: avg.execution||50,
+    rebellion: avg.rebellion||50
+  };
+}
+
+function submitQuiz(){
+  const scores=calcScores();
+
+  // Find matching personality type
+  let matched=null;
+  for(const t of personalityTypes){
+    if(t.condition(scores)){matched=t;break}
+  }
+  if(!matched) matched=personalityTypes[Math.floor(Math.random()*personalityTypes.length)];
+
+  // Render results
+  document.getElementById('quiz').style.display='none';
+  document.getElementById('results').style.display='block';
+  document.getElementById('typeEN').textContent=matched.id;
+  document.getElementById('typeZH').textContent='（'+matched.name+'）';
+  document.getElementById('matchPct').textContent=matched.match();
+  document.getElementById('systemNote').textContent=matched.note;
+  document.getElementById('interpretation').innerHTML=matched.desc.replace(/\n/g,'<br>');
+
+  // Render dimensions
+  const dl=document.getElementById('dimensionList');
+  dl.innerHTML='';
+  dimensionDefs.forEach(d=>{
+    const val=Math.max(5,Math.min(100,scores[d.key]||50));
+    const row=document.createElement('div');
+    row.className='dim-row';
+    row.innerHTML=`
+      <span class="dim-label">${d.label}</span>
+      <div class="dim-bar"><div class="dim-fill" style="width:${val}%"></div></div>
+      <span class="dim-val">${val}</span>
+    `;
+    dl.appendChild(row);
+  });
+
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>
